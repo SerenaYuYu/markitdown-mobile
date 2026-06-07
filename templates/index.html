@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>MarkItDown 轉換工具</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    background: #f2f2f7;
+    color: #1c1c1e;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #fff;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e5ea;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1c1c1e;
+  }
+
+  header p {
+    font-size: 13px;
+    color: #8e8e93;
+    margin-top: 2px;
+  }
+
+  main {
+    padding: 16px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #8e8e93;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  .drop-zone {
+    border: 2px dashed #c7c7cc;
+    border-radius: 10px;
+    padding: 32px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .drop-zone.dragover {
+    border-color: #007aff;
+    background: #f0f6ff;
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-zone .icon {
+    font-size: 40px;
+    margin-bottom: 8px;
+  }
+
+  .drop-zone .label {
+    font-size: 16px;
+    font-weight: 500;
+    color: #007aff;
+  }
+
+  .drop-zone .sublabel {
+    font-size: 13px;
+    color: #8e8e93;
+    margin-top: 4px;
+  }
+
+  .file-selected {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f2f2f7;
+    border-radius: 8px;
+    margin-top: 12px;
+  }
+
+  .file-selected .file-name {
+    font-size: 14px;
+    font-weight: 500;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-selected .remove-btn {
+    color: #ff3b30;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+    background: none;
+    border: none;
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .btn:active { opacity: 0.7; }
+
+  .btn-primary {
+    background: #007aff;
+    color: #fff;
+  }
+
+  .btn-primary:disabled {
+    background: #c7c7cc;
+    cursor: not-allowed;
+  }
+
+  .btn-success {
+    background: #34c759;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+
+  .btn-secondary {
+    background: #f2f2f7;
+    color: #007aff;
+    border: 1px solid #e5e5ea;
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: #e5e5ea;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 12px;
+    display: none;
+  }
+
+  .progress-bar .fill {
+    height: 100%;
+    background: #007aff;
+    border-radius: 2px;
+    animation: progress 1.5s ease-in-out infinite;
+  }
+
+  @keyframes progress {
+    0% { width: 0%; margin-left: 0; }
+    50% { width: 70%; margin-left: 15%; }
+    100% { width: 0%; margin-left: 100%; }
+  }
+
+  .status-msg {
+    text-align: center;
+    font-size: 14px;
+    color: #8e8e93;
+    margin-top: 10px;
+    min-height: 20px;
+  }
+
+  .status-msg.error { color: #ff3b30; }
+  .status-msg.success { color: #34c759; }
+
+  .result-area {
+    display: none;
+  }
+
+  .result-stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .stat {
+    background: #f2f2f7;
+    border-radius: 8px;
+    padding: 8px 12px;
+    flex: 1;
+    text-align: center;
+  }
+
+  .stat .value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #007aff;
+  }
+
+  .stat .label {
+    font-size: 11px;
+    color: #8e8e93;
+    margin-top: 2px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 12px;
+    border: 1px solid #e5e5ea;
+    border-radius: 8px;
+    font-family: "Menlo", "Monaco", monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+    background: #f9f9f9;
+    color: #1c1c1e;
+    margin-bottom: 12px;
+  }
+
+  .formats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .format-tag {
+    background: #f2f2f7;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #636366;
+  }
+
+  .copied-toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1c1c1e;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .copied-toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>MarkItDown 轉換工具</h1>
+  <p>將檔案轉換為 Markdown 格式</p>
+</header>
+
+<main>
+  <div class="card">
+    <div class="card-title">選擇檔案</div>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.csv,.txt,.html,.jpg,.jpeg,.png,.gif,.webp,.epub,.xml,.json,.zip">
+      <div class="icon">📄</div>
+      <div class="label">點此選擇檔案</div>
+      <div class="sublabel">或拖放到此處</div>
+    </div>
+    <div class="file-selected" id="fileSelected" style="display:none">
+      <span>📎</span>
+      <span class="file-name" id="fileName"></span>
+      <button class="remove-btn" onclick="clearFile()">✕</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">支援格式</div>
+    <div class="formats">
+      <span class="format-tag">PDF</span>
+      <span class="format-tag">Word</span>
+      <span class="format-tag">PowerPoint</span>
+      <span class="format-tag">Excel</span>
+      <span class="format-tag">圖片</span>
+      <span class="format-tag">HTML</span>
+      <span class="format-tag">TXT</span>
+      <span class="format-tag">CSV</span>
+      <span class="format-tag">EPUB</span>
+      <span class="format-tag">ZIP</span>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="convertBtn" onclick="convert()" disabled>
+    開始轉換
+  </button>
+
+  <div class="progress-bar" id="progressBar">
+    <div class="fill"></div>
+  </div>
+  <div class="status-msg" id="statusMsg"></div>
+
+  <div class="result-area" id="resultArea">
+    <div class="card">
+      <div class="card-title">轉換結果</div>
+      <div class="result-stats">
+        <div class="stat">
+          <div class="value" id="charCount">0</div>
+          <div class="label">字元數</div>
+        </div>
+        <div class="stat">
+          <div class="value" id="lineCount">0</div>
+          <div class="label">行數</div>
+        </div>
+      </div>
+      <textarea id="resultText" readonly></textarea>
+      <button class="btn btn-success" onclick="copyMarkdown()">複製 Markdown</button>
+      <button class="btn btn-secondary" onclick="downloadMarkdown()">儲存為 .md 檔案</button>
+      <button class="btn btn-secondary" onclick="resetAll()" style="margin-top:10px">重新轉換</button>
+    </div>
+  </div>
+</main>
+
+<div class="copied-toast" id="toast">已複製！</div>
+
+<script>
+  let selectedFile = null;
+  let currentFilename = "";
+  let currentMarkdown = "";
+
+  const fileInput = document.getElementById("fileInput");
+  const dropZone = document.getElementById("dropZone");
+  const fileSelected = document.getElementById("fileSelected");
+  const fileName = document.getElementById("fileName");
+  const convertBtn = document.getElementById("convertBtn");
+  const progressBar = document.getElementById("progressBar");
+  const statusMsg = document.getElementById("statusMsg");
+  const resultArea = document.getElementById("resultArea");
+
+  fileInput.addEventListener("change", e => {
+    if (e.target.files[0]) setFile(e.target.files[0]);
+  });
+
+  dropZone.addEventListener("dragover", e => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+  });
+
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+  });
+
+  function setFile(file) {
+    selectedFile = file;
+    fileName.textContent = file.name;
+    fileSelected.style.display = "flex";
+    convertBtn.disabled = false;
+    statusMsg.textContent = "";
+    statusMsg.className = "status-msg";
+  }
+
+  function clearFile() {
+    selectedFile = null;
+    fileInput.value = "";
+    fileSelected.style.display = "none";
+    convertBtn.disabled = true;
+    statusMsg.textContent = "";
+  }
+
+  async function convert() {
+    if (!selectedFile) return;
+
+    convertBtn.disabled = true;
+    progressBar.style.display = "block";
+    statusMsg.textContent = "轉換中，請稍候...";
+    statusMsg.className = "status-msg";
+    resultArea.style.display = "none";
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      const res = await fetch("/convert", { method: "POST", body: formData });
+      const data = await res.json();
+
+      progressBar.style.display = "none";
+
+      if (data.error) {
+        statusMsg.textContent = data.error;
+        statusMsg.className = "status-msg error";
+        convertBtn.disabled = false;
+        return;
+      }
+
+      currentMarkdown = data.markdown;
+      currentFilename = data.filename;
+
+      document.getElementById("resultText").value = currentMarkdown;
+      document.getElementById("charCount").textContent = currentMarkdown.length.toLocaleString();
+      document.getElementById("lineCount").textContent = currentMarkdown.split("\n").length.toLocaleString();
+
+      statusMsg.textContent = "轉換成功！";
+      statusMsg.className = "status-msg success";
+      resultArea.style.display = "block";
+
+      resultArea.scrollIntoView({ behavior: "smooth" });
+
+    } catch (e) {
+      progressBar.style.display = "none";
+      statusMsg.textContent = "網路錯誤，請確認伺服器是否執行中";
+      statusMsg.className = "status-msg error";
+      convertBtn.disabled = false;
+    }
+  }
+
+  function copyMarkdown() {
+    navigator.clipboard.writeText(currentMarkdown).then(() => {
+      const toast = document.getElementById("toast");
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2000);
+    });
+  }
+
+  async function downloadMarkdown() {
+    const res = await fetch("/download", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ markdown: currentMarkdown, filename: currentFilename })
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = currentFilename + ".md";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function resetAll() {
+    clearFile();
+    resultArea.style.display = "none";
+    statusMsg.textContent = "";
+  }
+</script>
+
+</body>
+</html>
