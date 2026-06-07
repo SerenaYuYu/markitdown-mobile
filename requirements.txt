@@ -1,2 +1,4 @@
 flask
-markitdown
+pypdf
+markdownify
+python-docx

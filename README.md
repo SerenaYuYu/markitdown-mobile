@@ -12,7 +12,7 @@
 ```bash
 lg2 clone https://github.com/SerenaYuYu/markitdown-mobile
 cd markitdown-mobile
-pip install flask markitdown
+pip install flask pypdf markdownify python-docx
 ```
 
 ### 每次使用
